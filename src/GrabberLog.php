@@ -151,7 +151,7 @@ class GrabberLog
      * @param int $longTimeRang 長時間範圍 (單位 min)
      * @param array $options [bufferNowMin 距離現在時間 int (單位 min) | coverTimeRang 包含上次抓取時間 int (單位 min) ]
      */
-    public function nextGrabberTime(int $pastMin, int $shortTimeRang, int $longTimeRang, array $options)
+    public function nextGrabberTime(int $pastMin, int $shortTimeRang, int $longTimeRang, array $options = [])
     {
         $carbonTimeZone = 'Asia/Taipei';
         $timeLimit = $pastMin >= $longTimeRang ? $longTimeRang : $shortTimeRang;
