@@ -153,14 +153,12 @@ class GrabberLog
      * 取得下次抓取時間 ( 適用參數有 [start | end] 並且是時間)
      *
      * @param int $pastMin 過去分鐘數
-     * @param int $shortTimeRang 短時間範圍 (單位 min)
-     * @param int $longTimeRang 長時間範圍 (單位 min)
+     * @param int $longTimeRang 最長時間範圍 (單位 min)
      * @param array $options [bufferNowMin 距離現在時間 int (單位 min) | coverTimeRang 包含上次抓取時間 int (單位 min) ]
      */
-    public function nextGrabberTime(int $pastMin, int $shortTimeRang, int $longTimeRang, array $options = [])
+    public function nextGrabberTime(int $pastMin, int $longTimeRang, array $options = [])
     {
         $carbonTimeZone = 'Asia/Taipei';
-//        $timeLimit = $pastMin >= $longTimeRang ? $longTimeRang : $shortTimeRang;
 
         $start = Carbon::now($carbonTimeZone)->subMinutes($pastMin);
         $nowLimit = Carbon::now($carbonTimeZone);
@@ -168,8 +166,7 @@ class GrabberLog
             $nowLimit = $nowLimit->subMinutes($options["bufferNowMin"]);
         }
 
-//        $end = $start->copy()->addMinutes($timeLimit)->gt($nowLimit)
-//            ? $nowLimit : $start->copy()->addMinutes($timeLimit) ;
+//
         $end = $nowLimit;
 
         $lastLog = $this->lastLog();
@@ -193,13 +190,8 @@ class GrabberLog
 
         // 若拉單間距時間過長則只拉長區間單位，拉不完的下次排程繼續拉，若小於長區間則直接抓到現在
         if ($end->diffInMinutes($start) >= $longTimeRang) {
-            $timeRange = $longTimeRang;
-            $end = $start->copy()->addMinutes($timeRange);
+            $end = $start->copy()->addMinutes($longTimeRang);
         }
-
-        # 防止超過現在時間
-//        $end = $end->gt($nowLimit)
-//            ? $nowLimit : $end;
 
         return [
             "start" => strtotime($start->format("Y-m-d H:i:s")),
