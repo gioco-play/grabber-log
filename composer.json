@@ -7,6 +7,8 @@
         }
     ],
     "require": {
+        "php": ">=7.2",
+        "psr/container": "^1.0",
         "gioco-plus/prism-plus": "dev-master"
     },
     "minimum-stability": "dev",

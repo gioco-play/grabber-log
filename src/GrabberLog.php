@@ -5,12 +5,12 @@ namespace GiocoPlus\GrabberLog;
 use Carbon\Carbon;
 use GiocoPlus\Mongodb\MongoDb;
 use Hyperf\Di\Annotation\Inject;
+use Psr\Container\ContainerInterface;
 
 class GrabberLog
 {
 
     /**
-     * @Inject()
      * @var MongoDb
      */
     protected $mongodb;
@@ -31,6 +31,11 @@ class GrabberLog
      * @var string
      */
     private $recordType;
+
+    public function __construct(ContainerInterface $container)
+    {
+        $this->mongodb = $container->get(MongoDb::class);
+    }
 
 
     /**
