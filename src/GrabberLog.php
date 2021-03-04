@@ -13,7 +13,7 @@ class GrabberLog
      * @Inject()
      * @var MongoDb
      */
-    private $mongodb;
+    protected $mongodb;
 
     protected $collectionName = "grabber_log";
 
