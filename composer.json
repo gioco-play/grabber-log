@@ -1,0 +1,18 @@
+{
+    "name": "gioco-play/grabber-log",
+    "authors": [
+        {
+            "name": "q",
+            "email": "q.wong@goldenf.co"
+        }
+    ],
+    "require": {
+        "gioco-plus/prism-plus": "dev-master"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "GiocoPlus\\GrabberLog\\": "src/"
+        }
+    }
+}
