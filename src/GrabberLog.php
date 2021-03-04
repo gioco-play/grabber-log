@@ -146,7 +146,7 @@ class GrabberLog
         }
 
         $lastLog = $this->mongodb->fetchAll($this->collectionName, $filter, ['sort' => ['_id' => -1]]);
-        return $lastLog[0];
+        return (!empty($lastLog[0])) ? $lastLog[0] : null;
     }
 
     /**
