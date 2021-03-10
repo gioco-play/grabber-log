@@ -74,13 +74,21 @@ class GrabberLog
      */
     public function running(string $start, array $extraParams = [])
     {
+        $defaultData = [
+            'vendor_code' => $this->vendorCode,
+            'agent' => $this->agent,
+            'status' => 'running',
+            'start' => $start
+        ];
+
+        if (!empty($this->recordType)) {
+            $defaultData = array_merge($defaultData, [
+                'record_type' => $this->recordType
+            ]);
+        }
+
         $this->grabberId = $this->mongodb->insert($this->collectionName, array_merge(
-            [
-                'vendor_code' => $this->vendorCode,
-                'agent' => $this->agent,
-                'status' => 'running',
-                'start' => $start
-            ],
+            $defaultData,
             $extraParams,
             [
                 'created_at' => new UTCDateTime(),
