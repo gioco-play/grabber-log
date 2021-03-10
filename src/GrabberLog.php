@@ -127,25 +127,28 @@ class GrabberLog
     /**
      * 取得最新一筆紀錄
      */
-    public function lastLog()
+    public function lastLog($filter = [])
     {
-        $filter = [
+        $mongoFilter = [
             'vendor_code' => $this->vendorCode,
         ];
 
         if (!empty($this->agent)) {
-            $filter = array_merge($filter, [
+            $mongoFilter = array_merge($mongoFilter, [
                 'agent' => $this->agent
             ]);
         }
 
         if (!empty($this->recordType)) {
-            $filter = array_merge($filter, [
+            $mongoFilter = array_merge($mongoFilter, [
                 'record_type' => $this->recordType
             ]);
         }
 
-        $lastLog = $this->mongodb->fetchAll($this->collectionName, $filter, ['sort' => ['_id' => -1]]);
+        // 額外條件
+        $mongoFilter = array_merge($mongoFilter, $filter);
+
+        $lastLog = $this->mongodb->fetchAll($this->collectionName, $mongoFilter, ['sort' => ['_id' => -1]]);
         return (!empty($lastLog[0])) ? $lastLog[0] : null;
     }
 
@@ -166,7 +169,6 @@ class GrabberLog
             $nowLimit = $nowLimit->subMinutes($options["bufferNowMin"]);
         }
 
-//
         $end = $nowLimit;
 
         $lastLog = $this->lastLog();
