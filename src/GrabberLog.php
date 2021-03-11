@@ -165,7 +165,7 @@ class GrabberLog
      *
      * @param int $pastMin 過去分鐘數
      * @param int $longTimeRang 最長時間範圍 (單位 min)
-     * @param array $options [bufferNowMin 距離現在時間 int (單位 min) | coverTimeRang 包含上次抓取時間 int (單位 min) ]
+     * @param array $options [bufferNowMin 距離現在時間 int (單位 min) | coverTimeRang 包含上次抓取時間 int (單位 min) | lastLogFilter 最後一條紀 filter ]
      */
     public function nextGrabberTime(int $pastMin, int $longTimeRang, array $options = [])
     {
@@ -179,7 +179,12 @@ class GrabberLog
 
         $end = $nowLimit;
 
-        $lastLog = $this->lastLog();
+        if (!empty($options["lastLogFilter"])) {
+            $lastLog = $this->lastLog($options["lastLogFilter"]);
+        } else {
+            $lastLog = $this->lastLog();
+        }
+
         if (!empty($lastLog)) {
             // 檢查最後一筆是否有時間差距
             $lastStartTime = Carbon::createFromFormat("Y-m-d H:i:s", $lastLog["start"], $carbonTimeZone);
