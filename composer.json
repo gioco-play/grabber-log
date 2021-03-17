@@ -1,11 +1,5 @@
 {
     "name": "gioco-plus/grabber-log",
-    "authors": [
-        {
-            "name": "q",
-            "email": "q.wong@goldenf.co"
-        }
-    ],
     "require": {
         "php": ">=7.2",
         "psr/container": "^1.0",
