@@ -33,9 +33,15 @@ class GrabberLog
      */
     private $recordType;
 
+    /**
+     * @var string
+     */
+    private $mongodbPool = 'default';
+
     public function __construct(ContainerInterface $container)
     {
         $this->mongodb = $container->get(MongoDb::class);
+        $this->mongodb->setPool($this->mongodbPool);
     }
 
 
@@ -87,7 +93,7 @@ class GrabberLog
             ]);
         }
 
-        $this->grabberId = $this->mongodb->insert($this->collectionName, array_merge(
+        $this->grabberId = $this->mongodb->setPool($this->mongodbPool)->insert($this->collectionName, array_merge(
             $defaultData,
             $extraParams,
             [
@@ -106,7 +112,7 @@ class GrabberLog
      */
     public function fail($extraParams = [])
     {
-        $this->mongodb->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
+        $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
             [
                 'status' => 'fail',
                 'updated_at' => new UTCDateTime()
@@ -123,7 +129,7 @@ class GrabberLog
      */
     public function complete($extraParams = [])
     {
-        $this->mongodb->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
+        $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
             [
                 'status' => 'complete',
                 'updated_at' => new UTCDateTime()
@@ -156,7 +162,7 @@ class GrabberLog
         // 額外條件
         $mongoFilter = array_merge($mongoFilter, $filter);
 
-        $lastLog = $this->mongodb->fetchAll($this->collectionName, $mongoFilter, ['sort' => ['_id' => -1]]);
+        $lastLog = $this->mongodb->setPool($this->mongodbPool)->fetchAll($this->collectionName, $mongoFilter, ['sort' => ['_id' => -1]]);
         return (!empty($lastLog[0])) ? $lastLog[0] : null;
     }
 
