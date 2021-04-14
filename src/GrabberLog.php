@@ -216,7 +216,7 @@ class GrabberLog
 
         return [
             "start" => $start->timestamp,
-            "end" => $start->timestamp
+            "end" => $end->timestamp
         ];
     }
 
