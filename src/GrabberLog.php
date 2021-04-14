@@ -215,8 +215,8 @@ class GrabberLog
         }
 
         return [
-            "start" => strtotime($start->format("Y-m-d H:i:s")),
-            "end" => strtotime($end->format("Y-m-d H:i:s"))
+            "start" => $start->timestamp,
+            "end" => $start->timestamp
         ];
     }
 
