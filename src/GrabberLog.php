@@ -4,13 +4,11 @@ namespace GiocoPlus\GrabberLog;
 
 use Carbon\Carbon;
 use GiocoPlus\Mongodb\MongoDb;
-use Hyperf\Di\Annotation\Inject;
-use Psr\Container\ContainerInterface;
+use Hyperf\Utils\ApplicationContext;
 use MongoDB\BSON\UTCDateTime;
 
 class GrabberLog
 {
-
     /**
      * @var MongoDb
      */
@@ -18,16 +16,20 @@ class GrabberLog
 
     protected $collectionName = "grabber_log";
 
-    /*
-     * 遊戲商代碼
+    /**
+     * @var string 遊戲商代碼
      */
     protected $vendorCode;
-    /*
-     * 代理線路
+
+    /**
+     * @var string 代理線路
+     *
      */
     protected $agent;
 
+
     private $grabberId;
+
     /**
      * @var string
      */
@@ -38,10 +40,25 @@ class GrabberLog
      */
     private $mongodbPool = 'default';
 
-    public function __construct(ContainerInterface $container)
+    /**
+     * GrabberLog constructor.
+     * @param string $vendorCode
+     * @param string $agent
+     * @param string $recordType
+     * @throws \Exception
+     */
+    public function __construct(string $vendorCode, string $agent = '', string $recordType = '')
     {
-        $this->mongodb = $container->get(MongoDb::class);
+        if (! ApplicationContext::getContainer()->has(MongoDb::class)) {
+            throw new \Exception('Please make sure if there is "MongoDb" in the container');
+        }
+        $this->mongodb = ApplicationContext::getContainer()->get(MongoDb::class);
+
         $this->mongodb->setPool($this->mongodbPool);
+
+        $this->vendorCode = $vendorCode;
+        $this->agent = $agent;
+        $this->recordType = $recordType;
     }
 
 
@@ -52,7 +69,7 @@ class GrabberLog
      * @param string $recordType settled_status | api 不同接口
      * @return GrabberLog
      */
-    public function setVendor(string $vendorCode, string $agent = '', string $recordType = '')
+    public function setDefault(string $vendorCode, string $agent = '', string $recordType = ''): GrabberLog
     {
         $this->vendorCode = $vendorCode;
         $this->agent = $agent;
@@ -67,7 +84,7 @@ class GrabberLog
      * @param string $id
      * @return $this
      */
-    public function setId(string $id)
+    public function setId(string $id): GrabberLog
     {
         $this->grabberId = $id;
         return $this;
@@ -172,8 +189,9 @@ class GrabberLog
      * @param int $pastMin 過去分鐘數
      * @param int $longTimeRang 最長時間範圍 (單位 min)
      * @param array $options [bufferNowMin 距離現在時間 int (單位 min) | coverTimeRang 包含上次抓取時間 int (單位 min) | lastLogFilter 最後一條紀 filter ]
+     * @return array [start | end]
      */
-    public function nextGrabberTime(int $pastMin, int $longTimeRang, array $options = [])
+    public function nextGrabberTime(int $pastMin, int $longTimeRang, array $options = []): array
     {
         $carbonTimeZone = 'Asia/Taipei';
 
@@ -219,8 +237,5 @@ class GrabberLog
             "end" => $end->timestamp
         ];
     }
-
-
-
 
 }
