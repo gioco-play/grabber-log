@@ -47,7 +47,7 @@ class GrabberLog
      * @param string $recordType
      * @throws \Exception
      */
-    public function __construct(string $vendorCode, string $agent = '', string $recordType = '')
+    public function __construct(string $vendorCode = '', string $agent = '', string $recordType = '')
     {
         if (! ApplicationContext::getContainer()->has(MongoDb::class)) {
             throw new \Exception('Please make sure if there is "MongoDb" in the container');
