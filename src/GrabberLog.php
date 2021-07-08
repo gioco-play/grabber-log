@@ -62,21 +62,21 @@ class GrabberLog
     }
 
 
-    /**
-     * 設定 log 初始值
-     * @param string $vendorCode 遊戲商代碼
-     * @param string $agent 代理線路 ex: op_code or 線路代號(名稱)
-     * @param string $recordType settled_status | api 不同接口
-     * @return GrabberLog
-     */
-    public function setDefault(string $vendorCode, string $agent = '', string $recordType = ''): GrabberLog
-    {
-        $this->vendorCode = $vendorCode;
-        $this->agent = $agent;
-        $this->recordType = $recordType;
-
-        return $this;
-    }
+//    /**
+//     * 設定 log 初始值
+//     * @param string $vendorCode 遊戲商代碼
+//     * @param string $agent 代理線路 ex: op_code or 線路代號(名稱)
+//     * @param string $recordType settled_status | api 不同接口
+//     * @return GrabberLog
+//     */
+//    public function setDefault(string $vendorCode, string $agent = '', string $recordType = ''): GrabberLog
+//    {
+//        $this->vendorCode = $vendorCode;
+//        $this->agent = $agent;
+//        $this->recordType = $recordType;
+//
+//        return $this;
+//    }
 
     /**
      * 設定grabber_id
