@@ -79,7 +79,7 @@ class GrabberLog
 //    }
 
     /**
-     * 設定grabber_id
+     * 設定 grabber_id
      *
      * @param string $id
      * @return $this
@@ -184,12 +184,12 @@ class GrabberLog
     }
 
     /**
-     * 取得下次抓取時間 ( 適用參數有 [start | end] 並且是時間)
+     * 取得下次抓取時間 (適用參數有 [ start | end ] 並且是時間)
      *
      * @param int $pastMin 過去分鐘數
      * @param int $longTimeRang 最長時間範圍 (單位 min)
-     * @param array $options [bufferNowMin 距離現在時間 int (單位 min) | coverTimeRang 包含上次抓取時間 int (單位 min) | lastLogFilter 最後一條紀 filter ]
-     * @return array [start | end]
+     * @param array $options [ bufferNowMin 距離現在時間 int (單位 min) | coverTimeRang 包含上次抓取時間 int (單位 min) | lastLogFilter 最後一條紀錄 filter ]
+     * @return array [ start | end ] 10 digit timestamp
      */
     public function nextGrabberTime(int $pastMin, int $longTimeRang, array $options = []): array
     {
