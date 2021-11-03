@@ -184,7 +184,7 @@ class GrabberLog
     }
 
     /**
-     * 取得下次抓取時間 (適用參數有 [ start | end ] 並且是時間)
+     * 取得下次抓取時間 (適用參數有 [ start | end ] 並且是時間) 返回 timestamp
      *
      * @param int $pastMin 過去分鐘數
      * @param int $longTimeRang 最長時間範圍 (單位 min)
@@ -192,6 +192,16 @@ class GrabberLog
      * @return array [ start | end ] 10 digit timestamp
      */
     public function nextGrabberTime(int $pastMin, int $longTimeRang, array $options = []): array
+    {
+        [$start, $end] = $this->nextGrabber($pastMin, $longTimeRang, $options);
+
+        return [
+            "start" => $start->timestamp,
+            "end" => $end->timestamp
+        ];
+    }
+
+    public function nextGrabber(int $pastMin, int $longTimeRang, array $options = [])
     {
         $carbonTimeZone = 'Asia/Taipei';
 
@@ -224,7 +234,6 @@ class GrabberLog
             if ($lastLog["status"] == "fail") {
                 $start = ($lastStartTime < $start) ? $lastStartTime : $start;
             }
-
         }
 
         // 若拉單間距時間過長則只拉長區間單位，拉不完的下次排程繼續拉，若小於長區間則直接抓到現在
@@ -233,8 +242,8 @@ class GrabberLog
         }
 
         return [
-            "start" => $start->timestamp,
-            "end" => $end->timestamp
+            "start" => $start,
+            "end" => $end
         ];
     }
 
