@@ -193,7 +193,7 @@ class GrabberLog
      */
     public function nextGrabberTime(int $pastMin, int $longTimeRang, array $options = []): array
     {
-        [$start, $end] = $this->nextGrabber($pastMin, $longTimeRang, $options);
+        [$start, $end] = array_values($this->nextGrabber($pastMin, $longTimeRang, $options));
 
         return [
             "start" => $start->timestamp,
