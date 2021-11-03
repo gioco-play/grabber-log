@@ -201,6 +201,14 @@ class GrabberLog
         ];
     }
 
+    /**
+     * 取得下次抓取時間 (適用參數有 [ start | end ] 並且是時間) 返回 Carbon
+     *
+     * @param int $pastMin 過去分鐘數
+     * @param int $longTimeRang 最長時間範圍 (單位 min)
+     * @param array $options [ bufferNowMin 距離現在時間 int (單位 min) | coverTimeRang 包含上次抓取時間 int (單位 min) | lastLogFilter 最後一條紀錄 filter ]
+     * @return array [ start | end ] Carbon
+     */
     public function nextGrabber(int $pastMin, int $longTimeRang, array $options = [])
     {
         $carbonTimeZone = 'Asia/Taipei';
