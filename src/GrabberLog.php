@@ -177,11 +177,11 @@ class GrabberLog
 
                 $totalFailCount = $lastFailCount + 1;
                 if ($totalFailCount % $this->failCountNotify == 0) {
-                    $message = "[" . env("APP_ENV") ."]" . "%0D%0A";
-                    $message .= "遊戲商：{$this->vendorCode}" . "%0D%0A";
-                    $message .= "代理：{$this->agent}" . "%0D%0A";
+                    $message = "[" . env("APP_ENV") ."]" . "\r\n";
+                    $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
+                    $message .= "代理：{$this->agent}" . "\r\n";
                     if (!empty($this->recordType)) {
-                        $message .= "{$this->recordType}" . "%0D%0A";
+                        $message .= "{$this->recordType}" . "\r\n";
                     }
                     $message .= "拉單失敗 已達到 {$totalFailCount} 次";
 
