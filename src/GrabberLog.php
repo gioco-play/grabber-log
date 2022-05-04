@@ -31,34 +31,66 @@ class GrabberLog
     private $grabberId;
 
     /**
-     * @var string
+     * @var string 注單類型
      */
     private $recordType;
+
+    /**
+     * @var bool Line 通知啟用狀態
+     */
+    private $notifyEnabled = false;
+
+    /**
+     * @var string
+     */
+    private $notifyAccessToken;
+
+    /**
+     * @var int 錯誤幾次發送通知
+     */
+    private $failCountNotify = 0;
+
+    private $lastLogTmp = [];
 
     /**
      * @var string
      */
     private $mongodbPool = 'default';
 
+//    private $allowField = [
+//        'start',
+//        'end',
+//        're_grabber'
+//    ];
+
     /**
      * GrabberLog constructor.
      * @param string $vendorCode
-     * @param string $agent
-     * @param string $recordType
+     * @param array $options
      * @throws \Exception
      */
-    public function __construct(string $vendorCode = '', string $agent = '', string $recordType = '')
+    public function __construct(string $vendorCode, array $options)
     {
         if (! ApplicationContext::getContainer()->has(MongoDb::class)) {
             throw new \Exception('Please make sure if there is "MongoDb" in the container');
         }
         $this->mongodb = ApplicationContext::getContainer()->get(MongoDb::class);
-
         $this->mongodb->setPool($this->mongodbPool);
 
         $this->vendorCode = $vendorCode;
-        $this->agent = $agent;
-        $this->recordType = $recordType;
+//        $this->agent = $agent;
+//        $this->recordType = $recordType;
+
+        $this->agent = $options['agent'] ?? '';
+        $this->recordType = $options['record_type'] ?? '';
+
+        if (!empty(env("LINE_NOTIFY_ACCESS_TOKEN"))) {
+            if (isset($options['fail_count_notify']) && intval($options['fail_count_notify']) >= 1) {
+                $this->notifyEnabled = true;
+                $this->notifyAccessToken = env("LINE_NOTIFY_ACCESS_TOKEN");
+                $this->failCountNotify = intval($options['fail_count_notify']);
+            }
+        }
     }
 
 
@@ -129,13 +161,71 @@ class GrabberLog
      */
     public function fail($extraParams = [])
     {
-        $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
-            [
-                'status' => 'fail',
-                'updated_at' => new UTCDateTime()
-            ],
-            $extraParams
-        ));
+        if ($this->notifyEnabled) {
+            $failCount = 1;
+            $lastLog = [];
+            if (empty($this->lastLogTmp)) {
+                $lastLog = $this->lastLog();
+            }  else {
+                $lastLog = $this->lastLogTmp;
+            }
+
+            if (!empty($lastLog) && isset($lastLog['status']) && $lastLog['status'] == 'fail') {
+                $lastFailCount = 0;
+                if (isset($lastLog['fail_count'])) {
+                    $lastFailCount = intval($lastFailCount);
+                }
+
+                $totalFailCount = $lastFailCount + 1;
+                if ($totalFailCount % $this->failCountNotify == 0) {
+                    $message = "[" . env("APP_ENV") ."] {$this->vendorCode} {$this->agent} ";
+                    if (!empty($this->recordType)) {
+                        $message .= "{$this->recordType} ";
+                    }
+                    $message .= " 拉單失敗已達到 {$totalFailCount}";
+
+                    $curl = curl_init();
+                    $headers = array(
+                        "Content-Type: application/x-www-form-urlencoded",
+                        "Authorization: Bearer {$this->notifyAccessToken}",
+                    );
+                    curl_setopt_array($curl, array(
+                        CURLOPT_URL => '/lineNotify/notify',
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_ENCODING => '',
+                        CURLOPT_MAXREDIRS => 10,
+                        CURLOPT_TIMEOUT => 0,
+                        CURLOPT_FOLLOWLOCATION => true,
+                        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                        CURLOPT_CUSTOMREQUEST => 'POST',
+                        CURLOPT_POSTFIELDS => http_build_query(['message' => $message]),
+                        CURLOPT_HTTPHEADER => $headers,
+                    ));
+
+                    $response = curl_exec($curl);
+                    var_dump("line notif curl :". json_encode($response));
+                    curl_close($curl);
+                }
+                $failCount = $totalFailCount;
+            }
+
+            $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
+                [
+                    'status' => 'fail',
+                    'updated_at' => new UTCDateTime(),
+                    'fail_count' => $failCount,
+                ],
+                $extraParams
+            ));
+        } else {
+            $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
+                [
+                    'status' => 'fail',
+                    'updated_at' => new UTCDateTime()
+                ],
+                $extraParams
+            ));
+        }
     }
 
     /**
@@ -226,6 +316,7 @@ class GrabberLog
         } else {
             $lastLog = $this->lastLog();
         }
+        $this->lastLogTmp = $lastLog;
 
         if (!empty($lastLog)) {
             // 檢查最後一筆是否有時間差距
