@@ -27,7 +27,6 @@ class GrabberLog
      */
     protected $agent;
 
-
     private $grabberId;
 
     /**
@@ -178,11 +177,12 @@ class GrabberLog
 
                 $totalFailCount = $lastFailCount + 1;
                 if ($totalFailCount % $this->failCountNotify == 0) {
-                    $message = "[" . env("APP_ENV") ."] {$this->vendorCode} {$this->agent} ";
+                    $message = "[" . env("APP_ENV") ."] \\n";
+                    $message .= "遊戲商：{$this->vendorCode} \\n 代理：{$this->agent} \\n";
                     if (!empty($this->recordType)) {
-                        $message .= "{$this->recordType} ";
+                        $message .= "{$this->recordType} \\n";
                     }
-                    $message .= " 拉單失敗 已達到 {$totalFailCount} 次";
+                    $message .= "拉單失敗 已達到 {$totalFailCount} 次";
 
                     $curl = curl_init();
                     $headers = array(
