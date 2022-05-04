@@ -176,15 +176,24 @@ class GrabberLog
                 }
 
                 $totalFailCount = $lastFailCount + 1;
-                if ($totalFailCount % $this->failCountNotify == 0) {
-                    $message = "[" . env("APP_ENV") ."]" . "\r\n";
-                    $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
-                    $message .= "代理：{$this->agent}" . "\r\n";
-                    if (!empty($this->recordType)) {
-                        $message .= "{$this->recordType}" . "\r\n";
-                    }
-                    $message .= "拉單失敗 已達到 {$totalFailCount} 次";
 
+                $sendStatus = false;
+                $message = "[" . env("APP_ENV") ."]" . "\r\n";
+                $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
+                $message .= "代理：{$this->agent}" . "\r\n";
+                if (!empty($this->recordType)) {
+                    $message .= "{$this->recordType}" . "\r\n";
+                }
+                $message .= "拉單失敗 已達到 {$totalFailCount} 次";
+
+
+                if ($totalFailCount % $this->failCountNotify == 0) {
+                    $sendStatus = true;
+                } elseif ($totalFailCount == 500) {
+                    $message .= "\r\n" . "已達通知次數上限，不在進行做通知，請相關技術儘速處理";
+                    $sendStatus = true;
+                }
+                if ($sendStatus) {
                     $curl = curl_init();
                     $headers = array(
                         "Content-Type: application/x-www-form-urlencoded",
@@ -207,6 +216,7 @@ class GrabberLog
                     var_dump("line notif curl :". json_encode($response));
                     curl_close($curl);
                 }
+
                 $failCount = $totalFailCount;
             }
 
