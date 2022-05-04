@@ -204,7 +204,7 @@ class GrabberLog
                         $sendStatus = true;
                     }
                 } elseif ($totalFailCount == 500) {
-                    $message .= "\r\n" . "已達通知次數上限，不在進行做通知，請相關技術儘速處理";
+                    $message .= "\r\n" . "已達通知次數上限，不在進行通知，請相關技術儘速處理";
                     $sendStatus = true;
                 }
                 if ($sendStatus) {
