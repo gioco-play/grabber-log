@@ -173,7 +173,7 @@ class GrabberLog
             if (!empty($lastLog) && isset($lastLog['status']) && $lastLog['status'] == 'fail') {
                 $lastFailCount = 0;
                 if (isset($lastLog['fail_count'])) {
-                    $lastFailCount = intval($lastFailCount);
+                    $lastFailCount = intval($lastLog['fail_count']);
                 }
 
                 $totalFailCount = $lastFailCount + 1;
@@ -182,7 +182,7 @@ class GrabberLog
                     if (!empty($this->recordType)) {
                         $message .= "{$this->recordType} ";
                     }
-                    $message .= " 拉單失敗已達到 {$totalFailCount}";
+                    $message .= " 拉單失敗 已達到 {$totalFailCount} 次";
 
                     $curl = curl_init();
                     $headers = array(
