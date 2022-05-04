@@ -190,7 +190,7 @@ class GrabberLog
                         "Authorization: Bearer {$this->notifyAccessToken}",
                     );
                     curl_setopt_array($curl, array(
-                        CURLOPT_URL => '/lineNotify/notify',
+                        CURLOPT_URL => 'https://notify-api.line.me/api/notify',
                         CURLOPT_RETURNTRANSFER => true,
                         CURLOPT_ENCODING => '',
                         CURLOPT_MAXREDIRS => 10,
