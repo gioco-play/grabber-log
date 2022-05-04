@@ -61,6 +61,10 @@ class GrabberLog
 //        'end',
 //        're_grabber'
 //    ];
+    /**
+     * @var string
+     */
+    private $operatorCode;
 
     /**
      * GrabberLog constructor.
@@ -82,6 +86,7 @@ class GrabberLog
 
         $this->agent = $options['agent'] ?? '';
         $this->recordType = $options['record_type'] ?? '';
+        $this->operatorCode = $options['operator_code'] ?? '';
 
         if (!empty(env("LINE_NOTIFY_ACCESS_TOKEN"))) {
             if (isset($options['fail_count_notify']) && intval($options['fail_count_notify']) >= 1) {
@@ -91,7 +96,6 @@ class GrabberLog
             }
         }
     }
-
 
 //    /**
 //     * 設定 log 初始值
@@ -141,6 +145,12 @@ class GrabberLog
             ]);
         }
 
+        if (!empty($this->operatorCode)) {
+            $defaultData = array_merge($defaultData, [
+                'operator_code' => $this->operatorCode
+            ]);
+        }
+
         $this->grabberId = $this->mongodb->setPool($this->mongodbPool)->insert($this->collectionName, array_merge(
             $defaultData,
             $extraParams,
@@ -184,11 +194,15 @@ class GrabberLog
                 if (!empty($this->recordType)) {
                     $message .= "{$this->recordType}" . "\r\n";
                 }
+                if (!empty($this->operatorCode)) {
+                    $message .= "營商代碼：{$this->operatorCode}" . "\r\n";
+                }
                 $message .= "拉單失敗 已達到 {$totalFailCount} 次";
 
-
-                if ($totalFailCount % $this->failCountNotify == 0) {
-                    $sendStatus = true;
+                if ($totalFailCount < 500) {
+                    if ($totalFailCount % $this->failCountNotify == 0) {
+                        $sendStatus = true;
+                    }
                 } elseif ($totalFailCount == 500) {
                     $message .= "\r\n" . "已達通知次數上限，不在進行做通知，請相關技術儘速處理";
                     $sendStatus = true;
