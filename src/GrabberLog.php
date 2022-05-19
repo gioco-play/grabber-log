@@ -184,11 +184,12 @@ class GrabberLog
                 if (isset($lastLog['fail_count'])) {
                     $lastFailCount = intval($lastLog['fail_count']);
                 }
+                $envTxt = env('APP_ENV', 'unknown');
 
                 $totalFailCount = $lastFailCount + 1;
 
                 $sendStatus = false;
-                $message = "[" . env("APP_ENV") ."]" . "\r\n";
+                $message = "[{$envTxt}]" . "\r\n";
                 $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
                 $message .= "代理：{$this->agent}" . "\r\n";
                 if (!empty($this->recordType)) {
