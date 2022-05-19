@@ -184,7 +184,7 @@ class GrabberLog
                 if (isset($lastLog['fail_count'])) {
                     $lastFailCount = intval($lastLog['fail_count']);
                 }
-                $envTxt = env('GRABBER_ENV', 'unknown');
+                $envTxt = env('APP_ENV', 'unknown');
 
                 $totalFailCount = $lastFailCount + 1;
 
