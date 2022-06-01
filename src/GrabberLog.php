@@ -193,7 +193,7 @@ class GrabberLog
                 $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
                 $message .= "代理：{$this->agent}" . "\r\n";
                 if (!empty($this->recordType)) {
-                    $message .= "{$this->recordType}" . "\r\n";
+                    $message .= "recordType: {$this->recordType}" . "\r\n";
                 }
                 if (!empty($this->operatorCode)) {
                     $message .= "營商代碼：{$this->operatorCode}" . "\r\n";
