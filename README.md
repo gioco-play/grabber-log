@@ -32,7 +32,7 @@ $grabberLog = new GrabberLog($vendorCode, $options);
 | $vendorCode | string | 遊戲商代碼 |
 | $options | array | 請看 options 說明 |
 
-options
+$options
 > ex: $options['agent']
 
 >參數皆為選填
@@ -114,7 +114,7 @@ $grabberLog->lastLog($filter);
 | $longTimeRang | int | 最長時間範圍 (單位 min) |
 | $options | array | 請看 options 說明 |
 
-options
+$options
 | 參數 | 類型 | 說明 |
 | - | - | - |
 | bufferNowMin | int | 距離現在時間 int (單位 min)，影響結束時間(end) |
