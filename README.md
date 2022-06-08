@@ -1,5 +1,19 @@
 # GrabberLog
 
+- [GrabberLog](#grabberlog)
+  * [初始化](#---)
+    + [參數說明](#----)
+  * [紀錄開始](#----)
+    + [參數說明](#-----1)
+  * [紀錄結束](#----)
+    + [參數說明](#-----2)
+  * [額外功能](#----)
+    + [取得最後一筆 grabber log](#-------grabber-log)
+      - [參數說明](#-----3)
+    + [取得下次抓取時間](#--------)
+      - [參數說明](#-----4)
+
+
 
 ## 初始化
 ```php
@@ -68,19 +82,19 @@ $grabberLog->fail($extraParams);
 | $extraParams | array | 提供完成時需額外紀錄|
 
 
-### 額外功能
-#### 取得最後一筆 grabber log
+## 額外功能
+### 取得最後一筆 grabber log
 ```php
 $grabberLog->lastLog($filter);
 ```
-##### 參數說明
+#### 參數說明
 | 參數 | 類型 | 說明 |
 | - | - | - |
 | $filter | array | 額外搜尋條件|
 
 ---
 
-#### 取得下次抓取時間
+### 取得下次抓取時間
 > 僅適用 log 內有 `start`、`end`
 
 > nextGrabber ， 返回 Carbon
@@ -96,7 +110,7 @@ $grabberLog->lastLog($filter);
                     ['bufferNowMin' => $bufferMin]
                 );
 ```
-##### 參數說明
+#### 參數說明
 | 參數 | 類型 | 說明 |
 | - | - | - |
 | $past_minutes | int | 過去分鐘數 |
@@ -108,6 +122,7 @@ options
 | - | - | - |
 | bufferNowMin | int | 距離現在時間 int (單位 min)，影響結束時間(end) |
 | coverTimeRang | int | 包含上次抓取時間 (單位 min) |
-| lastLogFilter | array | 最後一條紀錄 filter ｜
+| lastLogFilter | array | 最後一條紀錄 filter |
+
 
 ---
