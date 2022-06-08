@@ -6,7 +6,7 @@
   * [紀錄開始](https://github.com/gioco-play/grabber-log/tree/dev#%E7%B4%80%E9%8C%84%E9%96%8B%E5%A7%8B)
   * [紀錄結束](https://github.com/gioco-play/grabber-log/tree/dev#%E7%B4%80%E9%8C%84%E7%B5%90%E6%9D%9F)
   * [額外功能](https://github.com/gioco-play/grabber-log/tree/dev#%E9%A1%8D%E5%A4%96%E5%8A%9F%E8%83%BD)
-    + [取得最後一筆 grabber log](https://github.com/gioco-play/grabber-log/tree/dev#%E5%8F%96%E5%BE%97%E4%B8%8B%E6%AC%A1%E6%8A%93%E5%8F%96%E6%99%82%E9%96%93)
+    + [取得最後一筆 grabber log](https://github.com/gioco-play/grabber-log/tree/dev#%E5%8F%96%E5%BE%97%E6%9C%80%E5%BE%8C%E4%B8%80%E7%AD%86-grabber-log)
     + [取得下次抓取時間](https://github.com/gioco-play/grabber-log/tree/dev#%E5%8F%96%E5%BE%97%E4%B8%8B%E6%AC%A1%E6%8A%93%E5%8F%96%E6%99%82%E9%96%93)
 
 
