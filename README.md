@@ -1,20 +1,5 @@
 # GrabberLog
 
-- [GrabberLog](#grabberlog)
-  * [初始化](#---)
-    + [參數說明](#----)
-  * [紀錄開始](#----)
-    + [參數說明](#-----1)
-  * [紀錄結束](#----)
-    + [參數說明](#-----2)
-  * [額外功能](#----)
-    + [取得最後一筆 grabber log](#-------grabber-log)
-      - [參數說明](#-----3)
-    + [取得下次抓取時間](#--------)
-      - [參數說明](#-----4)
-
-
-
 ## 初始化
 ```php
 use GiocoPlus\GrabberLog\GrabberLog;
@@ -81,6 +66,8 @@ $grabberLog->fail($extraParams);
 | - | - | - |
 | $extraParams | array | 提供完成時需額外紀錄|
 
+
+---
 
 ## 額外功能
 ### 取得最後一筆 grabber log
