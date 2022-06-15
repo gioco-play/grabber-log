@@ -2,7 +2,7 @@
     "name": "gioco-plus/grabber-log",
     "require": {
         "php": ">=7.2",
-        "gioco-plus/prism-plus": "dev-master || >=2"
+        "gioco-plus/prism-plus": "dev-master || >=1"
     },
     "minimum-stability": "dev",
     "autoload": {
