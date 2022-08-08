@@ -296,7 +296,9 @@ class GrabberLog
         $mongoFilter = array_merge($mongoFilter, $filter);
 
         $lastLog = $this->mongodb->setPool($this->mongodbPool)->fetchAll($this->collectionName, $mongoFilter, ['sort' => ['_id' => -1]]);
-        return (!empty($lastLog[0])) ? $lastLog[0] : null;
+        $lastLog = (!empty($lastLog[0])) ? $lastLog[0] : null;
+        $this->lastLogTmp = $lastLog;
+        return $lastLog;
     }
 
     /**
@@ -342,7 +344,6 @@ class GrabberLog
         } else {
             $lastLog = $this->lastLog();
         }
-        $this->lastLogTmp = $lastLog;
 
         if (!empty($lastLog)) {
             // 檢查最後一筆是否有時間差距
