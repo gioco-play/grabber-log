@@ -194,9 +194,8 @@ class GrabberLog
                 // 判斷上一筆抓單紀錄內是否有失敗次數，若有則加上前一筆失敗次數
                 if (isset($lastLog['fail_count'])) {
                     $failNum = intval($lastLog['fail_count']);
+                    $failNum ++;
                 }
-
-                $failNum ++;
 
                 // 建立發送訊息
                 $message = "[{$envTxt}]" . "\r\n";
