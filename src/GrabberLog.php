@@ -172,7 +172,7 @@ class GrabberLog
     {
         // 判斷是否維護
         $maintain = false;
-        if (!empty($options['maintain']) && gettype($options['maintain'])) {
+        if (!empty($options['maintain']) && gettype($options['maintain']) == 'boolean') {
             $maintain = $options['maintain'];
         }
 
