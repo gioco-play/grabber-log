@@ -69,19 +69,18 @@ $grabberLog->running($start, $extraParams);
 
 ## 紀錄結束 (成功)
 ```php
-$grabberLog->complete($extraParams, $options);
+$grabberLog->complete($extraParams);
 ```
 ### 參數說明
 | 參數 | 類型 | 說明 |
 | - | - | - |
 | $extraParams | array | 提供完成時需額外紀錄|
-| $options | array |  |
 
 ---
 
 ## 紀錄結束 (失敗)
 ```php
-$grabberLog->fail($extraParams);
+$grabberLog->fail($extraParams, $options);
 ```
 ### 參數說明
 | 參數 | 類型 | 說明 |
