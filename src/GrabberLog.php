@@ -177,7 +177,7 @@ class GrabberLog
         }
 
         if ($this->notifyEnabled && $maintain === false) {
-            $failNum = 0;
+            $failNum = 1;
             $lastLog = [];
             if (empty($this->lastLogTmp)) {
                 $lastLog = $this->lastLog();
