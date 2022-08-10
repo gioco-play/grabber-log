@@ -1,14 +1,19 @@
 # GrabberLog
 
-
 - [GrabberLog](#grabberlog)
-  * [初始化](#%E5%88%9D%E5%A7%8B%E5%8C%96)
-  * [紀錄開始](#%E7%B4%80%E9%8C%84%E9%96%8B%E5%A7%8B)
-  * [紀錄結束](#%E7%B4%80%E9%8C%84%E7%B5%90%E6%9D%9F)
-  * [額外功能](#%E9%A1%8D%E5%A4%96%E5%8A%9F%E8%83%BD)
-    + [取得最後一筆 grabber log](#%E5%8F%96%E5%BE%97%E6%9C%80%E5%BE%8C%E4%B8%80%E7%AD%86-grabber-log)
-    + [取得下次抓取時間](#%E5%8F%96%E5%BE%97%E4%B8%8B%E6%AC%A1%E6%8A%93%E5%8F%96%E6%99%82%E9%96%93)
-
+  * [初始化](#---)
+    + [參數說明](#----)
+  * [紀錄開始](#----)
+    + [參數說明](#-----1)
+  * [紀錄結束 (成功)](#---------)
+    + [參數說明](#-----2)
+  * [紀錄結束 (失敗)](#---------)
+    + [參數說明](#-----3)
+  * [額外功能](#----)
+    + [取得最後一筆 grabber log](#-------grabber-log)
+      - [參數說明](#-----4)
+    + [取得下次抓取時間](#--------)
+      - [參數說明](#-----5)
 
 ## 初始化
 ```php
@@ -62,20 +67,36 @@ $grabberLog->running($start, $extraParams);
 ---
 
 
-## 紀錄結束
+## 紀錄結束 (成功)
 ```php
-# 完成時使用
-$grabberLog->complete($extraParams);
-
-# 錯誤時使用
-$grabberLog->fail($extraParams);
-
+$grabberLog->complete($extraParams, $options);
 ```
 ### 參數說明
 | 參數 | 類型 | 說明 |
 | - | - | - |
 | $extraParams | array | 提供完成時需額外紀錄|
+| $options | array |  |
 
+---
+
+## 紀錄結束 (失敗)
+```php
+$grabberLog->fail($extraParams);
+```
+### 參數說明
+| 參數 | 類型 | 說明 |
+| - | - | - |
+| $extraParams | array | 提供完成時需額外紀錄|
+| $options | array | 請看 options 說明 |
+
+$options
+> ex: $options['maintain']
+
+>參數皆為選填
+
+| 參數 | 類型 | 說明 |
+| - | - | - |
+| maintain | bool | 是否維護，此參數 true 時，則不會計算失敗次數及發送通知。 |
 
 ---
 

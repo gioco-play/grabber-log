@@ -168,10 +168,16 @@ class GrabberLog
      * @param array $extraParams
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
-    public function fail($extraParams = [])
+    public function fail($extraParams = [], $options = [])
     {
-        if ($this->notifyEnabled) {
-            $failCount = 1;
+        // 判斷是否維護
+        $maintain = false;
+        if (!empty($options['maintain']) && gettype($options['maintain'])) {
+            $maintain = $options['maintain'];
+        }
+
+        if ($this->notifyEnabled && $maintain === false) {
+            $failNum = 0;
             $lastLog = [];
             if (empty($this->lastLogTmp)) {
                 $lastLog = $this->lastLog();
@@ -179,79 +185,61 @@ class GrabberLog
                 $lastLog = $this->lastLogTmp;
             }
 
+            // 判斷是否達到發送通知頻率數量
             if (!empty($lastLog) && isset($lastLog['status']) && $lastLog['status'] == 'fail') {
-                $lastFailCount = 0;
-                if (isset($lastLog['fail_count'])) {
-                    $lastFailCount = intval($lastLog['fail_count']);
-                }
                 $envTxt = env('SERVICE_ENV', 'unknown');
-
-                $totalFailCount = $lastFailCount + 1;
-
                 $sendStatus = false;
+                $sendMaxNum = 500;
+
+                // 判斷上一筆抓單紀錄內是否有失敗次數，若有則加上前一筆失敗次數
+                if (isset($lastLog['fail_count'])) {
+                    $failNum = intval($lastLog['fail_count']);
+                }
+
+                $failNum ++;
+
+                // 建立發送訊息
                 $message = "[{$envTxt}]" . "\r\n";
                 $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
-                $message .= "代理：{$this->agent}" . "\r\n";
+                $message .= "(代理 / 線路)：{$this->agent}" . "\r\n";
                 if (!empty($this->recordType)) {
                     $message .= "recordType: {$this->recordType}" . "\r\n";
                 }
                 if (!empty($this->operatorCode)) {
                     $message .= "營商代碼：{$this->operatorCode}" . "\r\n";
                 }
-                $message .= "拉單失敗 已達到 {$totalFailCount} 次";
+                $message .= "拉單失敗 已達到 {$failNum} 次" . "\r\n";
 
-                if ($totalFailCount < 500) {
-                    if ($totalFailCount % $this->failCountNotify == 0) {
+                if ($failNum < $sendMaxNum) {
+                    if ($failNum % $this->failCountNotify == 0) {
                         $sendStatus = true;
                     }
-                } elseif ($totalFailCount == 500) {
-                    $message .= "\r\n" . "已達通知次數上限，不在進行通知，請相關技術儘速處理";
+                } elseif ($failNum == $sendMaxNum) {
+                    $message .= '已達通知次數上限，不在進行通知，請相關技術儘速處理';
                     $sendStatus = true;
                 }
+
                 if ($sendStatus) {
-                    $curl = curl_init();
-                    $headers = array(
-                        "Content-Type: application/x-www-form-urlencoded",
-                        "Authorization: Bearer {$this->notifyAccessToken}",
-                    );
-                    curl_setopt_array($curl, array(
-                        CURLOPT_URL => 'https://notify-api.line.me/api/notify',
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_ENCODING => '',
-                        CURLOPT_MAXREDIRS => 10,
-                        CURLOPT_TIMEOUT => 0,
-                        CURLOPT_FOLLOWLOCATION => true,
-                        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                        CURLOPT_CUSTOMREQUEST => 'POST',
-                        CURLOPT_POSTFIELDS => http_build_query(['message' => $message]),
-                        CURLOPT_HTTPHEADER => $headers,
-                    ));
-
-                    $response = curl_exec($curl);
-                    var_dump("line notif curl :". json_encode($response));
-                    curl_close($curl);
+                    $this->lineNotify($message);
                 }
-
-                $failCount = $totalFailCount;
             }
 
-            $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
-                [
-                    'status' => 'fail',
-                    'updated_at' => new UTCDateTime(),
-                    'fail_count' => $failCount,
-                ],
-                $extraParams
-            ));
+            $grabberUpdateField = [
+                'status' => 'fail',
+                'updated_at' => new UTCDateTime(),
+                'fail_count' => $failNum,
+            ];
         } else {
-            $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
-                [
-                    'status' => 'fail',
-                    'updated_at' => new UTCDateTime()
-                ],
-                $extraParams
-            ));
+            $grabberUpdateField = [
+                'status' => 'fail',
+                'updated_at' => new UTCDateTime()
+            ];
         }
+
+        $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
+            $grabberUpdateField,
+            $extraParams
+        ));
     }
 
     /**
@@ -373,4 +361,30 @@ class GrabberLog
         ];
     }
 
+    private function lineNotify(string $message)
+    {
+        $url = 'https://notify-api.line.me/api/notify';
+
+        $curl = curl_init();
+        $headers = array(
+            "Content-Type: application/x-www-form-urlencoded",
+            "Authorization: Bearer {$this->notifyAccessToken}",
+        );
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => http_build_query(['message' => $message]),
+            CURLOPT_HTTPHEADER => $headers,
+        ));
+
+        $response = curl_exec($curl);
+        var_dump("line notify curl :". json_encode($response));
+        curl_close($curl);
+    }
 }
