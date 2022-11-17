@@ -218,8 +218,9 @@ class GrabberLog
                     $sendStatus = true;
                 }
 
-                if (isset($extraParams['error_message']) && gettype($extraParams['error_message']) == 'string') {
-                    $errorMsg = substr($extraParams['error_message'], 0, 300);
+                if ((isset($extraParams['error_message']) && gettype($extraParams['error_message']) == 'string') || (isset($extraParams['error']['msg']) && gettype($extraParams['error']['msg']) == 'string' ) ) {
+                    $errorMsg = $extraParams['error_message'] ?? ($extraParams['error']['msg'] ?? '');
+                    $errorMsg = substr($errorMsg, 0, 300);
 
                     $message .= "\r\n";
                     $message .= "\r\n";
