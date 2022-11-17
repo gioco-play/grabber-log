@@ -218,6 +218,15 @@ class GrabberLog
                     $sendStatus = true;
                 }
 
+                if (isset($extraParams['error_message']) && gettype($extraParams['error_message']) == 'string') {
+                    $errorMsg = substr($extraParams['error_message'], 0, 300);
+
+                    $message .= "\r\n";
+                    $message .= "\r\n";
+                    $message .= 'error: ' . "\r\n";
+                    $message .= $errorMsg;
+                }
+
                 if ($sendStatus) {
                     $this->lineNotify($message);
                 }

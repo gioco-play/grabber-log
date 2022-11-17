@@ -83,18 +83,27 @@ $grabberLog->complete($extraParams);
 $grabberLog->fail($extraParams, $options);
 ```
 ### 參數說明
-| 參數 | 類型 | 說明 |
-| - | - | - |
-| $extraParams | array | 提供完成時需額外紀錄|
+| 參數 | 類型    | 說明            |
+| --- |-------|---------------|
+| $extraParams | array | 提供完成時需額外紀錄    |
 | $options | array | 請看 options 說明 |
+
+$extraParams
+> ex: $extraParams['error_message']
+
+>參數皆為選填
+
+| 參數            | 類型           | 說明                                 |
+|---------------|--------------|------------------------------------|
+| error_message | string (300) | 若有此參數，會在 Line Notify 發送時，將錯誤訊息一併送出 |
 
 $options
 > ex: $options['maintain']
 
 >參數皆為選填
 
-| 參數 | 類型 | 說明 |
-| - | - | - |
+| 參數 | 類型 | 說明                              |
+| --- | --- |---------------------------------|
 | maintain | bool | 是否維護，此參數 true 時，則不會計算失敗次數及發送通知。 |
 
 ---
