@@ -212,6 +212,8 @@ class GrabberLog
                 if ($failNum < $sendMaxNum) {
                     if ($failNum % $this->failCountNotify == 0) {
                         $sendStatus = true;
+                    } elseif ($failNum == 10) {
+                        $sendStatus = true;
                     }
                 } elseif ($failNum == $sendMaxNum) {
                     $message .= '已達通知次數上限，不在進行通知，請相關技術儘速處理';

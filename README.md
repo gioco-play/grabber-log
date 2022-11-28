@@ -47,7 +47,7 @@ $options
 | agent | string | 代理 |
 | record_type | string | 單類型 |
 | operatorCode | string | 營商代碼 |
-| fail_count_notify | int | 錯誤次數達到時發送 Line Notify 需設定 `.env` 內 `LINE_NOTIFY_ACCESS_TOKEN`，通知環境請設定 `SERVICE_ENV`，未設定預設 unknow
+| fail_count_notify | int | 錯誤次數達到時，發送 Line Notify 需設定 `.env` 內 `LINE_NOTIFY_ACCESS_TOKEN`，通知環境請設定 `SERVICE_ENV`，未設定預設 unknow
 
 
 ---
