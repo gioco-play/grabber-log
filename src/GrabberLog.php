@@ -216,7 +216,7 @@ class GrabberLog
                         $sendStatus = true;
                     }
                 } elseif ($failNum == $sendMaxNum) {
-                    $message .= '已達通知次數上限，不在進行通知，請相關技術儘速處理';
+                    $message .= '已達通知次數上限，不再進行通知，請相關技術儘速處理';
                     $sendStatus = true;
                 }
 
