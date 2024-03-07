@@ -27,40 +27,75 @@ class GrabberLog
      */
     protected $agent;
 
-
     private $grabberId;
+
+    /**
+     * @var string 注單類型
+     */
+    private $recordType;
+
+    /**
+     * @var bool Line 通知啟用狀態
+     */
+    private $notifyEnabled = false;
 
     /**
      * @var string
      */
-    private $recordType;
+    private $notifyAccessToken;
+
+    /**
+     * @var int 錯誤幾次發送通知
+     */
+    private $failCountNotify = 0;
+
+    private $lastLogTmp = [];
 
     /**
      * @var string
      */
     private $mongodbPool = 'default';
 
+//    private $allowField = [
+//        'start',
+//        'end',
+//        're_grabber'
+//    ];
+    /**
+     * @var string
+     */
+    private $operatorCode;
+
     /**
      * GrabberLog constructor.
      * @param string $vendorCode
-     * @param string $agent
-     * @param string $recordType
+     * @param array $options
      * @throws \Exception
      */
-    public function __construct(string $vendorCode = '', string $agent = '', string $recordType = '')
+    public function __construct(string $vendorCode, array $options)
     {
         if (! ApplicationContext::getContainer()->has(MongoDb::class)) {
             throw new \Exception('Please make sure if there is "MongoDb" in the container');
         }
         $this->mongodb = ApplicationContext::getContainer()->get(MongoDb::class);
-
         $this->mongodb->setPool($this->mongodbPool);
 
         $this->vendorCode = $vendorCode;
-        $this->agent = $agent;
-        $this->recordType = $recordType;
-    }
+//        $this->agent = $agent;
+//        $this->recordType = $recordType;
 
+        $this->agent = $options['agent'] ?? '';
+        $this->recordType = $options['record_type'] ?? '';
+        $this->operatorCode = $options['operator_code'] ?? '';
+
+        if (!empty(env("LINE_NOTIFY_ACCESS_TOKEN"))) {
+            if (isset($options['fail_count_notify']) && intval($options['fail_count_notify']) >= 1) {
+                $this->notifyEnabled = true;
+                $this->notifyAccessToken = env("LINE_NOTIFY_ACCESS_TOKEN");
+                $this->failCountNotify = intval($options['fail_count_notify']);
+            }
+        }
+    }
 
 //    /**
 //     * 設定 log 初始值
@@ -110,6 +145,12 @@ class GrabberLog
             ]);
         }
 
+        if (!empty($this->operatorCode)) {
+            $defaultData = array_merge($defaultData, [
+                'operator_code' => $this->operatorCode
+            ]);
+        }
+
         $this->grabberId = $this->mongodb->setPool($this->mongodbPool)->insert($this->collectionName, array_merge(
             $defaultData,
             $extraParams,
@@ -127,13 +168,89 @@ class GrabberLog
      * @param array $extraParams
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
-    public function fail($extraParams = [])
+    public function fail($extraParams = [], $options = [])
     {
-        $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
-            [
+        // 判斷是否維護
+        $maintain = false;
+        if (!empty($options['maintain']) && gettype($options['maintain']) == 'boolean') {
+            $maintain = $options['maintain'];
+        }
+
+        if ($this->notifyEnabled && $maintain === false) {
+            $failNum = 1;
+            $lastLog = [];
+            if (empty($this->lastLogTmp)) {
+                $lastLog = $this->lastLog();
+            }  else {
+                $lastLog = $this->lastLogTmp;
+            }
+
+            // 判斷是否達到發送通知頻率數量
+            if (!empty($lastLog) && isset($lastLog['status']) && $lastLog['status'] == 'fail') {
+                $envTxt = env('SERVICE_ENV', 'unknown');
+                $sendStatus = false;
+                $sendMaxNum = 500;
+
+                // 判斷上一筆抓單紀錄內是否有失敗次數，若有則加上前一筆失敗次數
+                if (isset($lastLog['fail_count'])) {
+                    $failNum = intval($lastLog['fail_count']);
+                    $failNum ++;
+                }
+
+                // 建立發送訊息
+                $message = "[{$envTxt}]" . "\r\n";
+                $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
+                $message .= "(代理 / 線路)：{$this->agent}" . "\r\n";
+                if (!empty($this->recordType)) {
+                    $message .= "recordType: {$this->recordType}" . "\r\n";
+                }
+                if (!empty($this->operatorCode)) {
+                    $message .= "營商代碼：{$this->operatorCode}" . "\r\n";
+                }
+                $message .= "拉單失敗 已達到 {$failNum} 次" . "\r\n";
+
+                if ($failNum < $sendMaxNum) {
+                    if ($failNum % $this->failCountNotify == 0) {
+                        $sendStatus = true;
+                    } elseif ($failNum == 10) {
+                        $sendStatus = true;
+                    }
+                } elseif ($failNum == $sendMaxNum) {
+                    $message .= '已達通知次數上限，不再進行通知，請相關技術儘速處理';
+                    $sendStatus = true;
+                }
+
+                if ((isset($extraParams['error_message']) && gettype($extraParams['error_message']) == 'string') || (isset($extraParams['error']['msg']) && gettype($extraParams['error']['msg']) == 'string' ) ) {
+                    $errorMsg = $extraParams['error_message'] ?? ($extraParams['error']['msg'] ?? '');
+                    $errorMsg = substr($errorMsg, 0, 300);
+
+                    $message .= "\r\n";
+                    $message .= "\r\n";
+                    $message .= 'error: ' . "\r\n";
+                    $message .= $errorMsg;
+                }
+
+                if ($sendStatus) {
+                    co(function () use ($message) {
+                        $this->lineNotify($message);
+                    });
+                }
+            }
+
+            $grabberUpdateField = [
+                'status' => 'fail',
+                'updated_at' => new UTCDateTime(),
+                'fail_count' => $failNum,
+            ];
+        } else {
+            $grabberUpdateField = [
                 'status' => 'fail',
                 'updated_at' => new UTCDateTime()
-            ],
+            ];
+        }
+
+        $this->mongodb->setPool($this->mongodbPool)->updateRow($this->collectionName, ["_id" => $this->grabberId], array_merge(
+            $grabberUpdateField,
             $extraParams
         ));
     }
@@ -180,7 +297,9 @@ class GrabberLog
         $mongoFilter = array_merge($mongoFilter, $filter);
 
         $lastLog = $this->mongodb->setPool($this->mongodbPool)->fetchAll($this->collectionName, $mongoFilter, ['sort' => ['_id' => -1]]);
-        return (!empty($lastLog[0])) ? $lastLog[0] : null;
+        $lastLog = (!empty($lastLog[0])) ? $lastLog[0] : null;
+        $this->lastLogTmp = $lastLog;
+        return $lastLog;
     }
 
     /**
@@ -255,4 +374,30 @@ class GrabberLog
         ];
     }
 
+    private function lineNotify(string $message)
+    {
+        $url = 'https://notify-api.line.me/api/notify';
+
+        $curl = curl_init();
+        $headers = array(
+            "Content-Type: application/x-www-form-urlencoded",
+            "Authorization: Bearer {$this->notifyAccessToken}",
+        );
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => http_build_query(['message' => $message]),
+            CURLOPT_HTTPHEADER => $headers,
+        ));
+
+        $response = curl_exec($curl);
+        var_dump("line notify curl :". json_encode($response));
+        curl_close($curl);
+    }
 }
