@@ -120,7 +120,7 @@ class GrabberLog
         }
         if (! empty(env("TELEGRAM_BOT_TOKEN")) && ! empty(env("TELEGRAM_CHAT_ID"))) {
             $this->enableTelegram = true;
-            $this->telegramBotToken = env("TELEGRAM_BOT_TOKEN");｀
+            $this->telegramBotToken = env("TELEGRAM_BOT_TOKEN");
             $this->telegramChatId = env("TELEGRAM_CHAT_ID");
         }
     }
