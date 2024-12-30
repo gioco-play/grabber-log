@@ -453,7 +453,7 @@ class GrabberLog
         ];
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://api.telegram.org/bot7947453361:AAFcru4bIeEgjCLz-kwPH8uk5iDLkV8LvWE/sendMessage',
+            CURLOPT_URL => $apiUrl,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
