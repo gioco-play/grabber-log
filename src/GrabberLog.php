@@ -4,6 +4,7 @@ namespace GiocoPlus\GrabberLog;
 
 use Carbon\Carbon;
 use GiocoPlus\Mongodb\MongoDb;
+use http\Env;
 use Hyperf\Utils\ApplicationContext;
 use MongoDB\BSON\UTCDateTime;
 
@@ -35,14 +36,39 @@ class GrabberLog
     private $recordType;
 
     /**
-     * @var bool Line 通知啟用狀態
+     * @var string
      */
-    private $notifyEnabled = false;
+    private $lineNotifyToken;
 
     /**
      * @var string
      */
-    private $notifyAccessToken;
+    private $discordWebhookUrl;
+
+    /**
+     * @var string
+     */
+    private $telegramBotToken;
+
+    /**
+     * @var string
+     */
+    private $telegramChatId;
+
+    /**
+     * @var bool
+     */
+    private $enableLineNotify;
+
+    /**
+     * @var bool
+     */
+    private $enableTelegram;
+
+    /**
+     * @var bool
+     */
+    private $enableDiscord;
 
     /**
      * @var int 錯誤幾次發送通知
@@ -56,11 +82,6 @@ class GrabberLog
      */
     private $mongodbPool = 'default';
 
-//    private $allowField = [
-//        'start',
-//        'end',
-//        're_grabber'
-//    ];
     /**
      * @var string
      */
@@ -81,19 +102,26 @@ class GrabberLog
         $this->mongodb->setPool($this->mongodbPool);
 
         $this->vendorCode = $vendorCode;
-//        $this->agent = $agent;
-//        $this->recordType = $recordType;
 
         $this->agent = $options['agent'] ?? '';
         $this->recordType = $options['record_type'] ?? '';
         $this->operatorCode = $options['operator_code'] ?? '';
 
-        if (!empty(env("LINE_NOTIFY_ACCESS_TOKEN"))) {
-            if (isset($options['fail_count_notify']) && intval($options['fail_count_notify']) >= 1) {
-                $this->notifyEnabled = true;
-                $this->notifyAccessToken = env("LINE_NOTIFY_ACCESS_TOKEN");
-                $this->failCountNotify = intval($options['fail_count_notify']);
-            }
+        $this->failCountNotify = intval($options['fail_count_notify']);
+
+        // 根據是否有各平台 token 判斷是否發送通知
+        if (! empty(env("LINE_NOTIFY_ACCESS_TOKEN"))) {
+            $this->lineNotifyToken = env("LINE_NOTIFY_ACCESS_TOKEN");
+            $this->enableLineNotify = true;
+        }
+        if (! empty(env("DISCORD_WEBHOOK_URL"))) {
+            $this->enableDiscord = true;
+            $this->discordWebhookUrl = env("DISCORD_WEBHOOK_URL");
+        }
+        if (! empty(env("TELEGRAM_BOT_TOKEN")) && ! empty(env("TELEGRAM_CHAT_ID"))) {
+            $this->enableTelegram = true;
+            $this->telegramBotToken = env("TELEGRAM_BOT_TOKEN");
+            $this->telegramChatId = env("TELEGRAM_CHAT_ID");
         }
     }
 
@@ -176,8 +204,8 @@ class GrabberLog
             $maintain = $options['maintain'];
         }
 
-        if ($this->notifyEnabled && $maintain === false) {
-            $failNum = 1;
+        if ($maintain === false && ($this->enableLineNotify && $this->enableDiscord && $this->enableTelegram)) {
+            $failCount = 1;
             $lastLog = [];
             if (empty($this->lastLogTmp)) {
                 $lastLog = $this->lastLog();
@@ -188,36 +216,36 @@ class GrabberLog
             // 判斷是否達到發送通知頻率數量
             if (!empty($lastLog) && isset($lastLog['status']) && $lastLog['status'] == 'fail') {
                 $envTxt = env('SERVICE_ENV', 'unknown');
-                $sendStatus = false;
-                $sendMaxNum = 500;
+                $sendNotify = false;
+                $maxNotifyCount = 500;
 
                 // 判斷上一筆抓單紀錄內是否有失敗次數，若有則加上前一筆失敗次數
                 if (isset($lastLog['fail_count'])) {
-                    $failNum = intval($lastLog['fail_count']);
-                    $failNum ++;
+                    $failCount = intval($lastLog['fail_count']);
+                    $failCount ++;
                 }
 
                 // 建立發送訊息
                 $message = "[{$envTxt}]" . "\r\n";
                 $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
-                $message .= "(代理 / 線路)：{$this->agent}" . "\r\n";
+                $message .= "\\(代理 / 線路\\)：{$this->agent}" . "\r\n";
                 if (!empty($this->recordType)) {
                     $message .= "recordType: {$this->recordType}" . "\r\n";
                 }
                 if (!empty($this->operatorCode)) {
                     $message .= "營商代碼：{$this->operatorCode}" . "\r\n";
                 }
-                $message .= "拉單失敗 已達到 {$failNum} 次" . "\r\n";
+                $message .= "拉單失敗 已達到 {$failCount} 次" . "\r\n";
 
-                if ($failNum < $sendMaxNum) {
-                    if ($failNum % $this->failCountNotify == 0) {
-                        $sendStatus = true;
-                    } elseif ($failNum == 10) {
-                        $sendStatus = true;
+                if ($failCount < $maxNotifyCount) {
+                    if ($failCount % $this->failCountNotify == 0) {
+                        $sendNotify = true;
+                    } elseif ($failCount == 10) {
+                        $sendNotify = true;
                     }
-                } elseif ($failNum == $sendMaxNum) {
+                } elseif ($failCount == $maxNotifyCount) {
                     $message .= '已達通知次數上限，不再進行通知，請相關技術儘速處理';
-                    $sendStatus = true;
+                    $sendNotify = true;
                 }
 
                 if ((isset($extraParams['error_message']) && gettype($extraParams['error_message']) == 'string') || (isset($extraParams['error']['msg']) && gettype($extraParams['error']['msg']) == 'string' ) ) {
@@ -227,20 +255,34 @@ class GrabberLog
                     $message .= "\r\n";
                     $message .= "\r\n";
                     $message .= 'error: ' . "\r\n";
-                    $message .= $errorMsg;
+                    $message .= "``` ". $errorMsg . " ```". "\r\n";
                 }
 
-                if ($sendStatus) {
-                    co(function () use ($message) {
-                        $this->lineNotify($message);
-                    });
+                if ($sendNotify) {
+                    if ($this->enableLineNotify) {
+                        co(function () use ($message) {
+                            $this->sendLineNotify($message);
+                        });
+                    }
+
+                    if ($this->enableTelegram) {
+                        co(function () use ($message) {
+                            $this->sendTelegram($message);
+                        });
+                    }
+
+                    if ($this->enableDiscord) {
+                        co(function () use ($message) {
+                            $this->sendDiscord($message);
+                        });
+                    }
                 }
             }
 
             $grabberUpdateField = [
                 'status' => 'fail',
                 'updated_at' => new UTCDateTime(),
-                'fail_count' => $failNum,
+                'fail_count' => $failCount,
             ];
         } else {
             $grabberUpdateField = [
@@ -374,21 +416,21 @@ class GrabberLog
         ];
     }
 
-    private function lineNotify(string $message)
+    private function sendLineNotify(string $message)
     {
         $url = 'https://notify-api.line.me/api/notify';
 
         $curl = curl_init();
         $headers = array(
             "Content-Type: application/x-www-form-urlencoded",
-            "Authorization: Bearer {$this->notifyAccessToken}",
+            "Authorization: Bearer {$this->lineNotifyToken}",
         );
         curl_setopt_array($curl, array(
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30,
+            CURLOPT_TIMEOUT => 10,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
@@ -398,6 +440,66 @@ class GrabberLog
 
         $response = curl_exec($curl);
         var_dump("line notify curl :". json_encode($response));
+        curl_close($curl);
+    }
+
+    private function sendTelegram(string $message) {
+        $curl = curl_init();
+        $apiUrl = "https://api.telegram.org/bot{$this->telegramBotToken}/sendMessage";
+        $params = [
+            'chat_id' => $this->telegramChatId,
+            'parse_mode' => 'MarkdownV2',
+            'text' => $message,
+        ];
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $apiUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => json_encode($params),
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json',
+            ),
+        ));
+
+        $response = curl_exec($curl);
+        var_dump("telegram sendMessage curl :". json_encode($response));
+
+        curl_close($curl);
+    }
+
+    private function sendDiscord(string $message)
+    {
+        $params = [
+            'content' => $message,
+        ];
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $this->discordWebhookUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => json_encode($params),
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json',
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        var_dump("discord textMessage curl :". json_encode($response));
+
         curl_close($curl);
     }
 }
