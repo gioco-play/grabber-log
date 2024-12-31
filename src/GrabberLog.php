@@ -204,7 +204,7 @@ class GrabberLog
             $maintain = $options['maintain'];
         }
 
-        if ($maintain === false && ($this->enableLineNotify && $this->enableDiscord && $this->enableTelegram)) {
+        if ($maintain === false && ($this->enableLineNotify || $this->enableDiscord || $this->enableTelegram)) {
             $failCount = 1;
             $lastLog = [];
             if (empty($this->lastLogTmp)) {
