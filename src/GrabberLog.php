@@ -227,7 +227,7 @@ class GrabberLog
                 // 建立發送訊息
                 $message = "[{$envTxt}]" . "\r\n";
                 $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
-                $message .= "\\(代理 / 線路\\)：{$this->agent}" . "\r\n";
+                $message .= "\(代理 / 線路\)：{$this->agent}" . "\r\n";
                 if (!empty($this->recordType)) {
                     $message .= "recordType: {$this->recordType}" . "\r\n";
                 }
@@ -256,6 +256,11 @@ class GrabberLog
                     $message .= 'error: ' . "\r\n";
                     $message .= "``` ". $errorMsg . " ```". "\r\n";
                 }
+
+                if (strpos($message, "_") !== false) {
+                    $message = str_replace("_", "\_", $message);
+                }
+
 
                 if ($sendNotify) {
                     if ($this->enableLineNotify) {
