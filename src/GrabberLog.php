@@ -254,7 +254,7 @@ class GrabberLog
                     $message .= "\r\n";
                     $message .= "\r\n";
                     $message .= 'error: ' . "\r\n";
-                    $message .= "``` ". $errorMsg . " ```". "\r\n";
+                    $message .= "```". $errorMsg . " ```". "\r\n";
                 }
 
 
