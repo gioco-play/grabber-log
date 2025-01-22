@@ -227,7 +227,7 @@ class GrabberLog
                 // 建立發送訊息
                 $message = "[{$envTxt}]" . "\r\n";
                 $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
-                $message .= "\\(代理 / 線路\\)：{$this->agent}" . "\r\n";
+                $message .= "(代理 / 線路)：{$this->agent}" . "\r\n";
                 if (!empty($this->recordType)) {
                     $message .= "recordType: {$this->recordType}" . "\r\n";
                 }
@@ -254,8 +254,9 @@ class GrabberLog
                     $message .= "\r\n";
                     $message .= "\r\n";
                     $message .= 'error: ' . "\r\n";
-                    $message .= "``` ". $errorMsg . " ```". "\r\n";
+                    $message .= "```". $errorMsg . " ```". "\r\n";
                 }
+
 
                 if ($sendNotify) {
                     if ($this->enableLineNotify) {
@@ -266,13 +267,13 @@ class GrabberLog
 
                     if ($this->enableTelegram) {
                         co(function () use ($message) {
-                            $this->sendTelegram($message);
+                            $this->sendTelegram($this->escapeSpecialChars($message));
                         });
                     }
 
                     if ($this->enableDiscord) {
                         co(function () use ($message) {
-                            $this->sendDiscord($message);
+                            $this->sendDiscord($this->escapeSpecialChars($message));
                         });
                     }
                 }
@@ -500,5 +501,15 @@ class GrabberLog
         var_dump("discord textMessage curl :". json_encode($response));
 
         curl_close($curl);
+    }
+
+    private function escapeSpecialChars($message) {
+        $symbols = ["_", "(", ")"];
+
+        foreach ($symbols as $symbol) {
+            $message = str_replace($symbol, "\\$symbol", $message);
+        }
+
+        return $message;
     }
 }
