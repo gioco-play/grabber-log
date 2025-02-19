@@ -273,7 +273,7 @@ class GrabberLog
 
                     if ($this->enableDiscord) {
                         co(function () use ($message) {
-                            $this->sendDiscord($this->escapeSpecialChars($message));
+                            $this->sendDiscord($message);
                         });
                     }
                 }
@@ -504,7 +504,7 @@ class GrabberLog
     }
 
     private function escapeSpecialChars($message) {
-        $symbols = ["_", "(", ")"];
+        $symbols = ["_", "(", ")", "-", "." , "{", "}" , "|"];
 
         foreach ($symbols as $symbol) {
             $message = str_replace($symbol, "\\$symbol", $message);
