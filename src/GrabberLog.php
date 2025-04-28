@@ -346,9 +346,7 @@ class GrabberLog
 
     private function lastFinishedLog($filter = [])
     {
-        $filter = array_merge($filter, [
-            'status' => ['$ne' => 'running'], // 只找非 running 的
-        ]);
+        $filter['status'] = ['$ne' => 'running']; // 只找非 running 的
         return $this->lastLog($filter);
     }
 
