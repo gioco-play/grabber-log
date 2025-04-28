@@ -109,10 +109,10 @@ class GrabberLog
         $this->failCountNotify = intval($options['fail_count_notify']);
 
         // 根據是否有各平台 token 判斷是否發送通知
-        if (! empty(env("LINE_NOTIFY_ACCESS_TOKEN"))) {
-            $this->lineNotifyToken = env("LINE_NOTIFY_ACCESS_TOKEN");
-            $this->enableLineNotify = true;
-        }
+//        if (! empty(env("LINE_NOTIFY_ACCESS_TOKEN"))) {
+//            $this->lineNotifyToken = env("LINE_NOTIFY_ACCESS_TOKEN");
+//            $this->enableLineNotify = true;
+//        }
         if (! empty(env("DISCORD_WEBHOOK_URL"))) {
             $this->enableDiscord = true;
             $this->discordWebhookUrl = env("DISCORD_WEBHOOK_URL");
@@ -203,11 +203,11 @@ class GrabberLog
             $maintain = $options['maintain'];
         }
 
-        if ($maintain === false && ($this->enableLineNotify || $this->enableDiscord || $this->enableTelegram)) {
+        if ($maintain === false && ($this->enableDiscord || $this->enableTelegram)) {
             $failCount = 1;
             $lastLog = [];
             if (empty($this->lastLogTmp)) {
-                $lastLog = $this->lastLog();
+                $lastLog = $this->lastFinishedLog();
             }  else {
                 $lastLog = $this->lastLogTmp;
             }
@@ -259,11 +259,11 @@ class GrabberLog
 
 
                 if ($sendNotify) {
-                    if ($this->enableLineNotify) {
-                        co(function () use ($message) {
-                            $this->sendLineNotify($message);
-                        });
-                    }
+//                    if ($this->enableLineNotify) {
+//                        co(function () use ($message) {
+//                            $this->sendLineNotify($message);
+//                        });
+//                    }
 
                     if ($this->enableTelegram) {
                         co(function () use ($message) {
@@ -342,6 +342,14 @@ class GrabberLog
         $lastLog = (!empty($lastLog[0])) ? $lastLog[0] : null;
         $this->lastLogTmp = $lastLog;
         return $lastLog;
+    }
+
+    private function lastFinishedLog($filter = [])
+    {
+        $filter = array_merge($filter, [
+            'status' => ['$ne' => 'running'], // 只找非 running 的
+        ]);
+        return $this->lastLog($filter);
     }
 
     /**
