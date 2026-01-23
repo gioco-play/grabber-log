@@ -184,6 +184,7 @@ class GrabberLog
             [
                 'created_at' => new UTCDateTime(),
                 'updated_at' => new UTCDateTime(),
+                'host_name' => gethostname(),
             ]
         ));
         return $this->grabberId;
