@@ -236,13 +236,13 @@ class GrabberLog
 
                 // 建立發送訊息 (依照 Go 版本格式)
                 $message = sprintf("*%s*\n", $this->escapeMarkdownV2("(" . $envTxt . ")"));
-                $message .= sprintf("*🎮 遊戲商：* %s \n", $this->vendorCode);
-                $message .= sprintf("*🛣️ 代理 / 線路：* `%s` \n", $this->escapeCode($this->agent));
+                $message .= sprintf("*遊戲商：* %s \n", $this->vendorCode);
+                $message .= sprintf("*代理 / 線路：* `%s` \n", $this->escapeCode($this->agent));
                 if (!empty($this->recordType)) {
                     $message .= sprintf("*recordType：*%s \n", $this->escapeMarkdownV2($this->recordType));
                 }
                 if (!empty($this->operatorCode)) {
-                    $message .= sprintf("*🏷️ 營商代碼：* `%s` \n", $this->operatorCode);
+                    $message .= sprintf("*營商代碼：* `%s` \n", $this->operatorCode);
                 }
                 $message .= sprintf("*❗ 拉單失敗次數：* %d \n", $failCount);
 
