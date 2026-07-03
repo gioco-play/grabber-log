@@ -3,6 +3,7 @@
 - [GrabberLog](#grabberlog)
   * [初始化](#初始化)
     + [參數說明](#參數說明)
+  * [環境變數設定](#環境變數設定)
   * [紀錄開始](#紀錄開始)
     + [參數說明](#參數說明-1)
   * [紀錄結束 (成功)](#紀錄結束-成功)
@@ -37,21 +38,38 @@ $grabberLog = new GrabberLog($vendorCode, $options);
 | $vendorCode | string | 遊戲商代碼 |
 | $options | array | 請看 options 說明 |
 
-$options
-> ex: $options['agent']
-
->參數皆為選填
+**$options**
+> 參數皆為選填
 
 | 參數 | 類型 | 說明 |
 | - | - | - |
 | agent | string | 代理 |
-| record_type | string | 單類型 |
-| operatorCode | string | 營商代碼 |
-| fail_count_notify | int | 錯誤次數達到時，發送 Line Notify 需設定 `.env` 內 `LINE_NOTIFY_ACCESS_TOKEN`，通知環境請設定 `SERVICE_ENV`，未設定預設 unknow
-
+| record_type | string | 注單類型 |
+| operator_code | string | 營商代碼 |
+| fail_count_notify | int | 錯誤次數達到時發送通知，通知環境請設定 `SERVICE_ENV` (未設定預設為 `unknown`) |
 
 ---
 
+## 環境變數設定
+若要啟用第三方平台通知，請在 `.env` 中設定以下變數：
+
+```env
+# 環境標記
+SERVICE_ENV=local
+
+# Discord 通知 (選填)
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+
+# Telegram 通知 (選填)
+TELEGRAM_BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ
+TELEGRAM_CHAT_ID=-100123456789
+TELEGRAM_TOPIC_ID=12  # Super Group 子主題/討論串 ID (選填)
+
+# Line Notify 通知 (選填)
+LINE_NOTIFY_ACCESS_TOKEN=your_line_notify_token
+```
+
+---
 
 ## 紀錄開始
 ```php
@@ -74,7 +92,7 @@ $grabberLog->complete($extraParams);
 ### 參數說明
 | 參數 | 類型 | 說明 |
 | - | - | - |
-| $extraParams | array | 提供完成時需額外紀錄|
+| $extraParams | array | 提供完成時需額外紀錄 |
 
 ---
 
@@ -88,23 +106,19 @@ $grabberLog->fail($extraParams, $options);
 | $extraParams | array | 提供完成時需額外紀錄    |
 | $options | array | 請看 options 說明 |
 
-$extraParams
-> ex: $extraParams['error_message']
-
->參數皆為選填
+**$extraParams**
+> 參數皆為選填
 
 | 參數            | 類型           | 說明                                 |
 |---------------|--------------|------------------------------------|
-| error_message | string (300) | 若有此參數，會在 Line Notify 發送時，將錯誤訊息一併送出 |
+| error_message | string (300) | 若有此參數，將在發送通知（Telegram / Discord / Line Notify）時，將錯誤訊息一併送出 |
 
-$options
-> ex: $options['maintain']
-
->參數皆為選填
+**$options**
+> 參數皆為選填
 
 | 參數 | 類型 | 說明                              |
 | --- | --- |---------------------------------|
-| maintain | bool | 是否維護，此參數 true 時，則不會計算失敗次數及發送通知。 |
+| maintain | bool | 是否維護，此參數為 true 時，則不會計算失敗次數及發送通知。 |
 
 ---
 
@@ -116,18 +130,16 @@ $grabberLog->lastLog($filter);
 #### 參數說明
 | 參數 | 類型 | 說明 |
 | - | - | - |
-| $filter | array | 額外搜尋條件|
+| $filter | array | 額外搜尋條件 |
 
 ---
 
 ### 取得下次抓取時間
 > 僅適用 log 內有 `start`、`end`
-
-> nextGrabber ， 返回 Carbon
-
-> nextGrabberTime ， 返回 timestamp 10 位
-
-
+> 
+> `nextGrabber` 返回 Carbon 物件
+> 
+> `nextGrabberTime` 返回 10 位 timestamp
 
 ```php
 ['start' => $startTime, 'end' => $endTime] = $grabberLog->nextGrabberTime(
@@ -143,12 +155,9 @@ $grabberLog->lastLog($filter);
 | $longTimeRang | int | 最長時間範圍 (單位 min) |
 | $options | array | 請看 options 說明 |
 
-$options
+**$options**
 | 參數 | 類型 | 說明 |
 | - | - | - |
 | bufferNowMin | int | 距離現在時間 int (單位 min)，影響結束時間(end) |
 | coverTimeRang | int | 包含上次抓取時間 (單位 min) |
 | lastLogFilter | array | 最後一條紀錄 filter |
-
-
----

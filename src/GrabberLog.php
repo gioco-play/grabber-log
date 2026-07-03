@@ -55,6 +55,11 @@ class GrabberLog
     private $telegramChatId;
 
     /**
+     * @var int|null Telegram Super Group Topic ID (message_thread_id)
+     */
+    private $telegramTopicId;
+
+    /**
      * @var bool
      */
     private $enableLineNotify;
@@ -121,6 +126,10 @@ class GrabberLog
             $this->enableTelegram = true;
             $this->telegramBotToken = env("TELEGRAM_BOT_TOKEN");
             $this->telegramChatId = env("TELEGRAM_CHAT_ID");
+            // 讀取 Telegram 討論區 (Topic) 的子主題 ID (message_thread_id)
+            if (! empty(env("TELEGRAM_TOPIC_ID"))) {
+                $this->telegramTopicId = intval(env("TELEGRAM_TOPIC_ID"));
+            }
         }
     }
 
@@ -268,7 +277,7 @@ class GrabberLog
 
                     if ($this->enableTelegram) {
                         co(function () use ($message) {
-                            $this->sendTelegram($this->escapeSpecialChars($message));
+                            $this->sendTelegram($this->convertMarkdownToHtml($message));
                         });
                     }
 
@@ -423,100 +432,104 @@ class GrabberLog
         ];
     }
 
+    /**
+     * 發送 Line Notify 訊息 (使用協程安全/非阻塞的 Guzzle Client)
+     *
+     * @param string $message
+     */
     private function sendLineNotify(string $message)
     {
         $url = 'https://notify-api.line.me/api/notify';
 
-        $curl = curl_init();
-        $headers = array(
-            "Content-Type: application/x-www-form-urlencoded",
-            "Authorization: Bearer {$this->lineNotifyToken}",
-        );
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => http_build_query(['message' => $message]),
-            CURLOPT_HTTPHEADER => $headers,
-        ));
-
-        $response = curl_exec($curl);
-        var_dump("line notify curl :". json_encode($response));
-        curl_close($curl);
+        try {
+            $clientFactory = ApplicationContext::getContainer()->get(\Hyperf\Guzzle\ClientFactory::class);
+            $client = $clientFactory->create(['timeout' => 10]);
+            $response = $client->post($url, [
+                'headers' => [
+                    'Authorization' => "Bearer {$this->lineNotifyToken}",
+                ],
+                'form_params' => [
+                    'message' => $message
+                ]
+            ]);
+            var_dump("line notify curl :". json_encode($response->getBody()->getContents()));
+        } catch (\Throwable $e) {
+            var_dump("line notify error :". $e->getMessage());
+        }
     }
 
+    /**
+     * 發送 Telegram 訊息 (使用協程安全/非阻塞的 Guzzle Client)
+     * 採用 HTML parse_mode 並支援討論串 (Topic) 發送
+     *
+     * @param string $message
+     */
     private function sendTelegram(string $message) {
-        $curl = curl_init();
         $apiUrl = "https://api.telegram.org/bot{$this->telegramBotToken}/sendMessage";
         $params = [
             'chat_id' => $this->telegramChatId,
-            'parse_mode' => 'MarkdownV2',
+            'parse_mode' => 'HTML',
             'text' => $message,
         ];
 
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $apiUrl,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => json_encode($params),
-            CURLOPT_HTTPHEADER => array(
-                'Content-Type: application/json',
-            ),
-        ));
+        // 若有設定主題/討論區 ID，則帶入對應參數
+        if (! empty($this->telegramTopicId)) {
+            $params['message_thread_id'] = $this->telegramTopicId;
+        }
 
-        $response = curl_exec($curl);
-        var_dump("telegram sendMessage curl :". json_encode($response));
-
-        curl_close($curl);
+        try {
+            $clientFactory = ApplicationContext::getContainer()->get(\Hyperf\Guzzle\ClientFactory::class);
+            $client = $clientFactory->create(['timeout' => 10]);
+            $response = $client->post($apiUrl, [
+                'json' => $params
+            ]);
+            var_dump("telegram sendMessage curl :". json_encode($response->getBody()->getContents()));
+        } catch (\Throwable $e) {
+            var_dump("telegram sendMessage error :". $e->getMessage());
+        }
     }
 
+    /**
+     * 發送 Discord Webhook 訊息 (使用協程安全/非阻塞的 Guzzle Client)
+     *
+     * @param string $message
+     */
     private function sendDiscord(string $message)
     {
         $params = [
             'content' => $message,
         ];
 
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->discordWebhookUrl,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => json_encode($params),
-            CURLOPT_HTTPHEADER => array(
-                'Content-Type: application/json',
-            ),
-        ));
-
-        $response = curl_exec($curl);
-
-        var_dump("discord textMessage curl :". json_encode($response));
-
-        curl_close($curl);
+        try {
+            $clientFactory = ApplicationContext::getContainer()->get(\Hyperf\Guzzle\ClientFactory::class);
+            $client = $clientFactory->create(['timeout' => 10]);
+            $response = $client->post($this->discordWebhookUrl, [
+                'json' => $params
+            ]);
+            var_dump("discord textMessage curl :". json_encode($response->getBody()->getContents()));
+        } catch (\Throwable $e) {
+            var_dump("discord textMessage error :". $e->getMessage());
+        }
     }
 
-    private function escapeSpecialChars($message) {
-        $symbols = ["_", "(", ")", "-", "." , "{", "}" , "|"];
+    /**
+     * 將訊息字串進行 HTML 安全轉義，並將 Markdown 格式的程式碼區塊轉換為 Telegram 支援的 HTML 標記
+     * 避免因 Markdown 解析語法錯誤而導致 Telegram 回傳 400 錯誤。
+     *
+     * @param string $message
+     * @return string
+     */
+    private function convertMarkdownToHtml(string $message): string
+    {
+        $html = htmlspecialchars($message, ENT_NOQUOTES, 'UTF-8');
 
-        foreach ($symbols as $symbol) {
-            $message = str_replace($symbol, "\\$symbol", $message);
-        }
+        // 將 ```error\r\n...\r\n``` 程式碼區塊轉換為 <pre><code class="language-error">...</code></pre>
+        $html = preg_replace(
+            '/```error\s*\r?\n?(.*?)\s*```/s',
+            '<pre><code class="language-error">$1</code></pre>',
+            $html
+        );
 
-        return $message;
+        return $html;
     }
 }
