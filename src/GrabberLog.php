@@ -234,38 +234,36 @@ class GrabberLog
                     $failCount ++;
                 }
 
-                // 建立發送訊息
-                $message = "[{$envTxt}]" . "\r\n";
-                $message .= "遊戲商：{$this->vendorCode}" . "\r\n";
-                $message .= "(代理 / 線路)：{$this->agent}" . "\r\n";
+                // 建立發送訊息 (依照 Go 版本格式)
+                $message = sprintf("*%s*\n", $this->escapeMarkdownV2("(" . $envTxt . ")"));
+                $message .= sprintf("*🎮 遊戲商：* %s \n", $this->vendorCode);
+                $message .= sprintf("*🛣️ 代理 / 線路：* `%s` \n", $this->escapeCode($this->agent));
                 if (!empty($this->recordType)) {
-                    $message .= "recordType: {$this->recordType}" . "\r\n";
+                    $message .= sprintf("*recordType：*%s \n", $this->escapeMarkdownV2($this->recordType));
                 }
                 if (!empty($this->operatorCode)) {
-                    $message .= "營商代碼：{$this->operatorCode}" . "\r\n";
+                    $message .= sprintf("*🏷️ 營商代碼：* `%s` \n", $this->operatorCode);
                 }
-                $message .= "拉單失敗 已達到 {$failCount} 次" . "\r\n";
+                $message .= sprintf("*❗ 拉單失敗次數：* %d \n", $failCount);
 
                 if ($failCount < $maxNotifyCount) {
-                    if ($failCount % $this->failCountNotify == 0) {
+                    if ($failCount % $this->failCountNotify == 0) { // 餘數為 0 時，發送
                         $sendNotify = true;
-                    } elseif ($failCount == 10) {
+                    } elseif ($failCount == 10) { // 預設第 10 次時皆通知
                         $sendNotify = true;
                     }
-                } elseif ($failCount == $maxNotifyCount) {
-                    $message .= '已達通知次數上限，不再進行通知，請相關技術儘速處理';
+                } elseif ($failCount == $maxNotifyCount || $failCount % 2000 == 0) { // 第 500 次警示，之後每 2000 次通知一次（含 2000, 4000, 6000...）
+                    $message .= "\n*🚨 失敗次數已超過上限，請相關技術儘速處理*\n\n";
                     $sendNotify = true;
                 }
 
-                if ((isset($extraParams['error_message']) && gettype($extraParams['error_message']) == 'string') || (isset($extraParams['error']['msg']) && gettype($extraParams['error']['msg']) == 'string' ) ) {
-                    $errorMsg = $extraParams['error_message'] ?? ($extraParams['error']['msg'] ?? '');
-                    $errorMsg = substr($errorMsg, 0, 300);
+                $message .= sprintf("*🧾 Grabber Trace：* `%s`", $this->escapeCode((string)$this->grabberId));
+                $message .= "\n\n";
 
-                    $message .= "\r\n";
-                    $message .= "\r\n";
-
-                    $message .= sprintf("\r\n\r\n```%s\r\n%s```", 'error', $errorMsg);
-                }
+                // 限制錯誤訊息長度，避免通知過長
+                $errorMsg = $extraParams['error_message'] ?? ($extraParams['error']['msg'] ?? '');
+                $errorMsg = substr($errorMsg, 0, 500); // 限制 500 字元
+                $message .= sprintf("```\n%s```", $this->escapeCode($errorMsg));
 
 
                 if ($sendNotify) {
@@ -277,7 +275,7 @@ class GrabberLog
 
                     if ($this->enableTelegram) {
                         co(function () use ($message) {
-                            $this->sendTelegram($this->convertMarkdownToHtml($message));
+                            $this->sendTelegram($message);
                         });
                     }
 
@@ -460,7 +458,7 @@ class GrabberLog
 
     /**
      * 發送 Telegram 訊息 (使用協程安全/非阻塞的 Guzzle Client)
-     * 採用 HTML parse_mode 並支援討論串 (Topic) 發送
+     * 採用 MarkdownV2 parse_mode 並支援討論串 (Topic) 發送
      *
      * @param string $message
      */
@@ -468,7 +466,7 @@ class GrabberLog
         $apiUrl = "https://api.telegram.org/bot{$this->telegramBotToken}/sendMessage";
         $params = [
             'chat_id' => $this->telegramChatId,
-            'parse_mode' => 'HTML',
+            'parse_mode' => 'MarkdownV2',
             'text' => $message,
         ];
 
@@ -513,23 +511,32 @@ class GrabberLog
     }
 
     /**
-     * 將訊息字串進行 HTML 安全轉義，並將 Markdown 格式的程式碼區塊轉換為 Telegram 支援的 HTML 標記
-     * 避免因 Markdown 解析語法錯誤而導致 Telegram 回傳 400 錯誤。
+     * 用於一般文字的 MarkdownV2 轉義，避免因 Markdown 解析語法錯誤而導致 Telegram 回傳 400 錯誤。
+     * 注意：反斜線必須放在第一位替換，否則會把後續替換產生的反斜線也再次轉義。
      *
-     * @param string $message
+     * @param string $text
      * @return string
      */
-    private function convertMarkdownToHtml(string $message): string
+    private function escapeMarkdownV2(string $text): string
     {
-        $html = htmlspecialchars($message, ENT_NOQUOTES, 'UTF-8');
+        $chars = ["\\", "_", "*", "[", "]", "(", ")", "~", "`", ">", "<", "&", "#", "+", "-", "=", "|", "{", "}", ".", "!"];
 
-        // 將 ```error\r\n...\r\n``` 程式碼區塊轉換為 <pre><code class="language-error">...</code></pre>
-        $html = preg_replace(
-            '/```error\s*\r?\n?(.*?)\s*```/s',
-            '<pre><code class="language-error">$1</code></pre>',
-            $html
-        );
+        foreach ($chars as $c) {
+            $text = str_replace($c, "\\" . $c, $text);
+        }
+        return $text;
+    }
 
-        return $html;
+    /**
+     * 專門用於 Code 區塊 (“`text`”) 內的轉義。在 Code 區塊內，只需要轉義 ` 和 \
+     *
+     * @param string $text
+     * @return string
+     */
+    private function escapeCode(string $text): string
+    {
+        $text = str_replace("\\", "\\\\", $text); // 先轉義反斜線
+        $text = str_replace("`", "\\`", $text);   // 再轉義反引號
+        return $text;
     }
 }

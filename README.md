@@ -111,7 +111,7 @@ $grabberLog->fail($extraParams, $options);
 
 | 參數            | 類型           | 說明                                 |
 |---------------|--------------|------------------------------------|
-| error_message | string (300) | 若有此參數，將在發送通知（Telegram / Discord / Line Notify）時，將錯誤訊息一併送出 |
+| error_message | string (500) | 若有此參數，將在發送通知（Telegram / Discord / Line Notify）時，將錯誤訊息一併送出 |
 
 **$options**
 > 參數皆為選填
